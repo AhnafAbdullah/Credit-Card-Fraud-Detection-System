@@ -1,0 +1,9 @@
+# ignore virtual environment
+.venv/
+
+# ignore dataset
+creditcard.csv
+
+# ignore Python cache
+__pycache__/
+*.pyc
