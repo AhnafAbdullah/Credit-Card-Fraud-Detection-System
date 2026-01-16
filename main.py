@@ -98,8 +98,9 @@ def main():
     # Make predictions on the test set
     y_hat = model_1.predict(X_test)
 
-    print("--- Decision Tree Results ---")
+    print("--- Decision Tree Results [Confusion Matrix] ---")
     print(confusion_matrix(y_test, y_hat))
+    print(classification_report(y_test, y_hat))
 
 
 if __name__ == '__main__':
