@@ -4,7 +4,7 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, PrecisionRecallDisplay, precision_recall_curve, average_precision_score
 def exploratory_data_analysis(df):
     # Looking at first five rows
     print(df.head())
@@ -91,17 +91,29 @@ def main():
     # distributed evenly between training and testing sets.
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=17, stratify=y)
 
-    # Initialize the model
+    # Initialize the Decision Tree model
     model_1 = DecisionTreeClassifier(max_depth=5, random_state=17)
     # Train the model
     model_1.fit(X_train, y_train)
     # Make predictions on the test set
-    y_hat = model_1.predict(X_test)
+    y_hat_decision_tree = model_1.predict(X_test)
 
     print("--- Decision Tree Results [Confusion Matrix] ---")
-    print(confusion_matrix(y_test, y_hat))
-    print(classification_report(y_test, y_hat))
+    print(confusion_matrix(y_test, y_hat_decision_tree))
+    print(classification_report(y_test, y_hat_decision_tree))
 
+    # 1. Get the probability scores (not just 0 or 1)
+    # Models give a probability for each class; we want the probability of being '1' (fraud)
+    y_scores_decision_tree = model_1.predict_proba(X_test)[:, 1]
+
+    # 2. Calculate the Average Precision (the area under the curve)
+    average_precision = average_precision_score(y_test, y_scores_decision_tree)
+
+    # 3. Create the plot
+    display = PrecisionRecallDisplay.from_predictions(y_test, y_scores_decision_tree, name="Decision Tree")
+    _ = display.ax_.set_title(f"Precision-Recall Curve (AP={average_precision:.2f})")
+
+    plt.show()
 
 if __name__ == '__main__':
     main()
