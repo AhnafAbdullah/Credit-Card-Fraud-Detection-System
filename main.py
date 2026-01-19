@@ -4,6 +4,7 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, classification_report, PrecisionRecallDisplay, precision_recall_curve, average_precision_score
 def exploratory_data_analysis(df):
     # Looking at first five rows
@@ -55,7 +56,7 @@ def visualize(df):
     # Calculate correlation
     corr = df.corr()
 
-    # THIS SHOWS A CORELATION HEATMAP
+    # THIS SHOWS A CO-RELATION HEATMAP
     # Plot heatmap
     sns.heatmap(corr, cmap='coolwarm_r', annot=False)
     plt.title('Correlation Matrix Heatmap')
@@ -91,28 +92,47 @@ def main():
     # distributed evenly between training and testing sets.
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=17, stratify=y)
 
+    # TRAINING THE MODELS
     # Initialize the Decision Tree model
     model_1 = DecisionTreeClassifier(max_depth=5, random_state=17)
-    # Train the model
+    # 1. Initialize the Random Forest
+    # n_estimators=100 means we are training 100 different trees simultaneously
+    # class_weight='balanced' automatically adjusts weights inversely proportional to class frequencies
+    model_2 = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=17,  class_weight='balanced', n_jobs=-1)
+
+    # Train the models
     model_1.fit(X_train, y_train)
+    model_2.fit(X_train, y_train)
     # Make predictions on the test set
     y_hat_decision_tree = model_1.predict(X_test)
+    y_scores_decision_tree = model_1.predict_proba(X_test)[:, 1]
+    y_hat_random_forest = model_2.predict(X_test)
+    y_scores_random_forest = model_2.predict_proba(X_test)[:, 1]
 
-    print("--- Decision Tree Results [Confusion Matrix] ---")
+    print("--- Decision Tree Results --- \nConfusion Matrix")
     print(confusion_matrix(y_test, y_hat_decision_tree))
     print(classification_report(y_test, y_hat_decision_tree))
 
-    # 1. Get the probability scores (not just 0 or 1)
-    # Models give a probability for each class; we want the probability of being '1' (fraud)
-    y_scores_decision_tree = model_1.predict_proba(X_test)[:, 1]
+    print("\n--- Random Forest Evaluation ---")
+    print(confusion_matrix(y_test, y_hat_random_forest))
+    print(classification_report(y_test, y_hat_random_forest))
 
-    # 2. Calculate the Average Precision (the area under the curve)
-    average_precision = average_precision_score(y_test, y_scores_decision_tree)
+    # Create the plotting area
+    fig, ax = plt.subplots(figsize=(10, 7))
 
-    # 3. Create the plot
-    display = PrecisionRecallDisplay.from_predictions(y_test, y_scores_decision_tree, name="Decision Tree")
-    _ = display.ax_.set_title(f"Precision-Recall Curve (AP={average_precision:.2f})")
+    # Plot Decision Tree Curve
+    display1 = PrecisionRecallDisplay.from_predictions(
+        y_test, y_scores_decision_tree, name="Decision Tree", ax=ax
+    )
 
+    # Plot Random Forest Curve (the one with class_weight='balanced')
+    display2 = PrecisionRecallDisplay.from_predictions(
+        y_test, y_scores_random_forest, name="Random Forest (Balanced)", ax=ax
+    )
+
+    # Add Title and Legend
+    ax.set_title("Model Comparison: Precision-Recall Curves")
+    plt.legend()
     plt.show()
 
 if __name__ == '__main__':
