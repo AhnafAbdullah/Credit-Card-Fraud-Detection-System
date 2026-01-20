@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, classification_report, PrecisionRecallDisplay, precision_recall_curve, average_precision_score
 def exploratory_data_analysis(df):
     # Looking at first five rows
@@ -91,7 +92,10 @@ def main():
     # Stratify=y is CRITICAL here. It ensures the 0.17% fraud is
     # distributed evenly between training and testing sets.
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=17, stratify=y)
-
+    # Scale features for Logistic Regression (and optionally for trees)
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
     # TRAINING THE MODELS
     # Initialize the Decision Tree model
     model_1 = DecisionTreeClassifier(max_depth=5, random_state=17)
@@ -116,6 +120,26 @@ def main():
     print("\n--- Random Forest Evaluation ---")
     print(confusion_matrix(y_test, y_hat_random_forest))
     print(classification_report(y_test, y_hat_random_forest))
+    # Logistic Regression Model
+
+    print("\n=== Logistic Regression ===")
+
+    lr_model = LogisticRegression(
+    max_iter=1000,
+    random_state=42,
+    solver='lbfgs'
+    )
+
+    lr_model.fit(X_train_scaled, y_train)
+    y_pred_lr = lr_model.predict(X_test_scaled)
+    y_pred_proba_lr = lr_model.predict_proba(X_test_scaled)[:, 1]
+        # Evaluation metrics
+    print("\nConfusion Matrix:")
+    print(confusion_matrix(y_test, y_pred_lr))
+
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred_lr))
+
 
     # Create the plotting area
     fig, ax = plt.subplots(figsize=(10, 7))
@@ -129,7 +153,10 @@ def main():
     display2 = PrecisionRecallDisplay.from_predictions(
         y_test, y_scores_random_forest, name="Random Forest (Balanced)", ax=ax
     )
-
+    # Plot Logistic Regression Curve
+    PrecisionRecallDisplay.from_predictions(
+        y_test, y_pred_proba_lr, name="Logistic Regression", ax=ax
+    )
     # Add Title and Legend
     ax.set_title("Model Comparison: Precision-Recall Curves")
     plt.legend()
